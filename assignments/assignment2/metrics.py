@@ -11,6 +11,10 @@ def multiclass_accuracy(prediction, ground_truth):
     """
 
     # TODO: Implement computing accuracy
-    raise Exception("Not implemented!")
-
-    return 0
+    total = len(prediction)
+    correct = 0
+    for i in range(total):
+        if prediction[i] == ground_truth[i]:
+            correct += 1
+        
+    return correct / total
