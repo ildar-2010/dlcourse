@@ -111,8 +111,9 @@ class Trainer:
                 batch_losses.append(loss)
 
             if np.not_equal(self.learning_rate_decay, 1.0):
+                self.learning_rate *= self.learning_rate_decay 
                 # TODO: Implement learning rate decay
-                raise Exception("Not implemented!")
+                # raise Exception("Not implemented!")
 
             ave_loss = np.mean(batch_losses)
 
