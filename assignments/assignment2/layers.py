@@ -1,4 +1,5 @@
 import numpy as np
+np.random.seed(42)
 
 
 def softmax(predictions):
@@ -111,9 +112,11 @@ class ReLULayer:
         # TODO: Implement forward pass
         # Hint: you'll need to save some information about X
         # to use it later in the backward pass
-        self.dX = X > 0
+        self.dX = (X > 0)
+        
 
-        return np.maximum(0, X)
+        # return np.maximum(0, X)
+        return X * self.dX
 
     def backward(self, d_out):
         """
@@ -129,8 +132,8 @@ class ReLULayer:
         """
         # TODO: Implement backward pass
         # Your final implementation shouldn't have any loops
-
-        return d_out * self.dX
+        d_result = d_out * self.dX
+        return d_result
 
     def params(self):
         # ReLU Doesn't have any parameters

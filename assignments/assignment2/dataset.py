@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import scipy.io as io
+np.random.seed(42)
 
 
 def load_data_mat(filename, max_samples, seed=42):

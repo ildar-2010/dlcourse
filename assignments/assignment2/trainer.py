@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 from metrics import multiclass_accuracy
+np.random.seed(42)
 
 
 class Dataset:
@@ -103,17 +104,18 @@ class Trainer:
                 y_batch = self.dataset.train_y[batch_indices]
 
                 loss = self.model.compute_loss_and_gradients(X_batch, y_batch)
-
+                
                 for param_name, param in self.model.params().items():
                     optimizer = self.optimizers[param_name]
                     param.value = optimizer.update(param.value, param.grad, self.learning_rate)
 
                 batch_losses.append(loss)
-
+        
             if np.not_equal(self.learning_rate_decay, 1.0):
                 self.learning_rate *= self.learning_rate_decay 
                 # TODO: Implement learning rate decay
                 # raise Exception("Not implemented!")
+            
 
             ave_loss = np.mean(batch_losses)
 

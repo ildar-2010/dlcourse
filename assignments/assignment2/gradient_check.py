@@ -1,4 +1,5 @@
 import numpy as np
+np.random.seed(42)
 
 
 def check_gradient(f, x, delta=1e-5, tol = 1e-4):

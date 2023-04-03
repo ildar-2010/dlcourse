@@ -1,6 +1,7 @@
 import numpy as np
 
 from layers import FullyConnectedLayer, ReLULayer, softmax_with_cross_entropy, l2_regularization
+np.random.seed(42)
 
 
 class TwoLayerNet:
