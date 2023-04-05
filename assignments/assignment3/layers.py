@@ -85,7 +85,7 @@ class FullyConnectedLayer:
     def params(self):
         return { 'W': self.W, 'B': self.B }
 
-    
+
 class ConvolutionalLayer:
     def __init__(self, in_channels, out_channels,
                  filter_size, padding):
@@ -115,8 +115,14 @@ class ConvolutionalLayer:
     def forward(self, X):
         batch_size, height, width, channels = X.shape
 
-        out_height = 0
-        out_width = 0
+        out_height = height - self.filter_size + 2 * self.padding + 1
+        out_width = width - self.filter_size + 2 * self.padding + 1
+
+        # Initialize the output tensor
+        output = np.zeros((batch_size, out_height, out_width, self.out_channels))
+
+        # Apply padding to the input tensor
+        X_padded = np.pad(X, ((0,0), (self.padding,self.padding), (self.padding,self.padding), (0,0)), mode='constant')
         
         # TODO: Implement forward pass
         # Hint: setup variables that hold the result
@@ -126,38 +132,79 @@ class ConvolutionalLayer:
         # but try to avoid having any other loops
         for y in range(out_height):
             for x in range(out_width):
-                # TODO: Implement forward pass for specific location
-                pass
-        raise Exception("Not implemented!")
+                receptive_field = X_padded[:, y:y+self.filter_size, x:x+self.filter_size, :, np.newaxis]
+                # Reshape tensor to matrix
+                field_vc_len = int(np.product(receptive_field.shape) / batch_size)
+                w_col_len = int(np.product(self.W.value.shape) / field_vc_len)
+                receptive_field_matrix = receptive_field.reshape(batch_size, field_vc_len)
+                W_matrix = self.W.value.reshape(field_vc_len, w_col_len)
 
+                val = np.dot(receptive_field_matrix, W_matrix) + self.B.value
+
+                output[:, y, x, :] = val
+                # output1[:, y, x, :] = np.sum(receptive_field * self.W.value[np.newaxis, :, :, :], axis=(1,2,3)) + self.B.value
+                # TODO: Implement forward pass for specific location
+        
+        self.X = X
+        self.X_padded = X_padded
+
+        return output
 
     def backward(self, d_out):
-        # Hint: Forward pass was reduced to matrix multiply
-        # You already know how to backprop through that
-        # when you implemented FullyConnectedLayer
-        # Just do it the same number of times and accumulate gradients
+        batch_size, height, width, channels = self.X.shape
 
-        batch_size, height, width, channels = X.shape
-        _, out_height, out_width, out_channels = d_out.shape
+        out_height = height - self.filter_size + 2 * self.padding + 1
+        out_width = width - self.filter_size + 2 * self.padding + 1
 
-        # TODO: Implement backward pass
-        # Same as forward, setup variables of the right shape that
-        # aggregate input gradient and fill them for every location
-        # of the output
+        # Initialize the output tensors for gradients
+        d_input = np.zeros_like(self.X)
+        d_W = np.zeros_like(self.W.value)
+        d_B = np.zeros_like(self.B.value)
 
-        # Try to avoid having any other loops here too
+        # Apply padding to the input tensor
+        d_X_padded = np.pad(d_input, ((0,0), (self.padding,self.padding), (self.padding,self.padding), (0,0)), mode='constant')
+
         for y in range(out_height):
             for x in range(out_width):
-                # TODO: Implement backward pass for specific location
-                # Aggregate gradients for both the input and
-                # the parameters (W and B)
-                pass
+                receptive_field = self.X_padded[:, y:y+self.filter_size, x:x+self.filter_size, :, np.newaxis]
+                # Reshape tensor to matrix
+                field_vc_len = int(np.product(receptive_field.shape) / batch_size)
+                w_col_len = int(np.product(self.W.value.shape) / field_vc_len)
+                receptive_field_matrix = receptive_field.reshape(batch_size, field_vc_len)
+                W_matrix = self.W.value.reshape(field_vc_len, w_col_len)
 
-        raise Exception("Not implemented!")
+                # # Calculate gradients of loss w.r.t. parameters (weights and biases)
+                d_val = d_out[:, y, x, :]
+                d_W_matrix = np.dot(receptive_field_matrix.T, d_val)
+                d_B_val = np.sum(d_val, axis=0)
+
+                # Calculate gradients of loss w.r.t. input
+                d_receptive_field_matrix = np.dot(d_val, W_matrix.T)
+                d_receptive_field = d_receptive_field_matrix.reshape(receptive_field.shape)
+
+                d_X_padded[:, y:y+self.filter_size, x:x+self.filter_size, :] += d_receptive_field[..., 0]
+
+                # Update gradients of parameters
+                d_W += d_W_matrix.reshape(self.W.value.shape)
+                d_B += d_B_val
+
+        # Remove padding from the gradients of input
+        if self.padding > 0:
+            d_input = d_X_padded[:, self.padding:-self.padding, self.padding:-self.padding, :]
+        else:
+            d_input = d_X_padded
+        # Update the parameters of the layer
+        self.W.grad += d_W
+        self.B.grad += d_B
+
+        return d_input
 
     def params(self):
-        return { 'W': self.W, 'B': self.B }
-
+        return {'W': self.W, 'B': self.B}
+    
+    def reset_grad(self):
+        self.W.grad = np.zeros_like(self.W.value)
+        self.B.grad = np.zeros_like(self.B.value)
 
 class MaxPoolingLayer:
     def __init__(self, pool_size, stride):
