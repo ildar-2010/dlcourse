@@ -3,7 +3,7 @@ import numpy as np
 from layers import (
     FullyConnectedLayer, ReLULayer,
     ConvolutionalLayer, MaxPoolingLayer, Flattener,
-    softmax_with_cross_entropy, l2_regularization, softmax
+    softmax_with_cross_entropy, l2_regularization
     )
 
 
@@ -27,23 +27,40 @@ class ConvNet:
         conv2_channels, int - number of filters in the 2nd conv layer
         """
         # TODO Create necessary layers
-        image_width, image_height, in_channels = input_shape
-        self.n_output_classes = n_output_classes
+        # self.model = [
+        #     # ConvolutionalLayer(in_channels=input_shape[2], out_channels=conv1_channels,
+        #     #     filter_size=3, padding=1),
+        #     ReLULayer(),
+        #     MaxPoolingLayer(pool_size=2, stride=2),
+        #     # ConvolutionalLayer(in_channels=conv1_channels, out_channels=conv2_channels,
+        #     # filter_size=3, padding=1),
+        #     Flattener(),
+        #     FullyConnectedLayer(n_input=16*16*3, n_output=n_output_classes)
+        # ]
+        # self.model = [
+    
+        #     Flattener(),
+        #     FullyConnectedLayer(n_input=32*32*3, n_output=100),
+        #     ReLULayer(),
+        #     FullyConnectedLayer(n_input=100, n_output=10),
+
+        # ]
 
         self.model = [
-            ConvolutionalLayer(in_channels=in_channels, out_channels=conv1_channels,
-                filter_size=3, padding=1),
-            ReLULayer(),
-            MaxPoolingLayer(pool_size=4, stride=4),
-            ConvolutionalLayer(in_channels=conv1_channels, out_channels=conv2_channels,
-            filter_size=3, padding=1),
-            ReLULayer(),
-            MaxPoolingLayer(4, 4),
-            Flattener(),
-            FullyConnectedLayer(n_input=4*conv2_channels, n_output=n_output_classes)
+          Flattener(),
+          FullyConnectedLayer(32*32*3, 100),
+          ReLULayer(),
+          FullyConnectedLayer(100, 10)
+
         ]
-
-
+    
+        # gradients pass
+        # self.model = [
+        #     ReLULayer(),
+        #     MaxPoolingLayer(pool_size=2, stride=2),
+        #     Flattener(),
+        #     FullyConnectedLayer(n_input=16*16*3, n_output=n_output_classes)
+        # ]
     def compute_loss_and_gradients(self, X, y):
         """
         Computes total loss and updates parameter gradients
@@ -80,11 +97,10 @@ class ConvNet:
         for layer in self.model:
           X_ = layer.forward(X_)
         
-        probs = softmax(X_)
-        # print(probs)
-        # print(np.argmax(probs, axis=1))
-        # print('\n')
-        return np.argmax(probs, axis=1)
+        print(X_)
+        print(X_.argmax(axis=1))
+        print('\n')
+        return X_.argmax(axis=1)
 
     def params(self):
         result = {}

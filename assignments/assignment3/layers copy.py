@@ -314,7 +314,6 @@ class ConvolutionalLayer:
         self.W.grad = np.zeros_like(self.W.value)
         self.B.grad = np.zeros_like(self.B.value)
 
-
 class MaxPoolingLayer:
     def __init__(self, pool_size, stride):
         '''
@@ -329,45 +328,44 @@ class MaxPoolingLayer:
         self.X = None
 
     def forward(self, X):
+        self.X = X
         batch_size, height, width, channels = X.shape
+
+        output_height = int((height - self.pool_size) / self.stride + 1)
+        output_width = int((width - self.pool_size) / self.stride + 1)
+        
+        output = np.zeros((batch_size, output_height, output_width, channels))
         # TODO: Implement maxpool forward pass
         # Hint: Similarly to Conv layer, loop on
         # output x/y dimension
-        self.X = X.copy()
 
-        out_height = int((height - self.pool_size) / self.stride) + 1
-        out_width = int((width - self.pool_size) / self.stride) + 1
-        
-        out = np.zeros((batch_size, out_height, out_width, channels))
-        
-        for y in range(out_height):
-            for x in range(out_width):
-                X_slice = X[:, y:y + self.pool_size, x:x + self.pool_size, :]
-                out[:, y, x, :] = np.amax(X_slice, axis=(1, 2))
+        for y in range(output_height):
+            for x in range(output_width):
+                window = X[:, y*self.stride:y*self.stride+self.pool_size, x*self.stride:x*self.stride+self.pool_size, :]
 
-        return out
+                output[:, x, y, :] = np.max(window, axis=(1, 2))
+
+        return output
 
     def backward(self, d_out):
-        # TODO: Implement maxpool backward pass
         batch_size, height, width, channels = self.X.shape
 
-        out_height = int((height - self.pool_size) / self.stride) + 1
-        out_width = int((width - self.pool_size) / self.stride) + 1
+        output_height = int((height - self.pool_size) / self.stride + 1)
+        output_width = int((width - self.pool_size) / self.stride + 1)
+        
+        dX = np.zeros_like(self.X)
 
-        out = np.zeros_like(self.X)
-
-        for y in range(out_height):
-            for x in range(out_width):
-                X_slice = self.X[:, y:y + self.pool_size, x:x + self.pool_size, :]
-                grad = d_out[:, y, x, :][:, np.newaxis, np.newaxis, :]
-                mask = (X_slice == np.amax(X_slice, (1, 2))[:, np.newaxis, np.newaxis, :])
-                out[:, y:y + self.pool_size, x:x + self.pool_size, :] += grad * mask
-
-        return out
-
+        for y in range(output_height):
+            for x in range(output_width):
+                window = self.X[:, y*self.stride:y*self.stride+self.pool_size, x*self.stride:x*self.stride+self.pool_size, :]
+                max_vals = np.amax(window, axis=(1, 2), keepdims=True)
+                max_mask = (window == max_vals)
+                dX[:, y*self.stride:y*self.stride+self.pool_size, x*self.stride:x*self.stride+self.pool_size, :] = max_mask * (d_out[:, y, x, :])[:, None, None, :]
+        return dX
+    
     def params(self):
         return {}
-    
+
     def reset_grad(self):
       pass
 
