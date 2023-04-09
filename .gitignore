@@ -58,3 +58,6 @@ __pycache__
 sync.sh
 spark_conf.json
 *.mat
+*.zip
+*.img
+*.jpg
